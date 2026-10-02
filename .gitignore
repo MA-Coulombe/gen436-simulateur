@@ -1,5 +1,6 @@
 # Notes de cours : matériel protégé, à ne pas publier avec le simulateur
 *.pdf
+tests/
 
 # Python
 __pycache__/
