@@ -1,0 +1,26 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<title>GEN436 – Tests de l'interface</title>
+<style>
+  body { font: 14px/1.45 system-ui, sans-serif; margin: 24px; color: #1b1b1b; }
+  h1 { font-size: 20px; }
+  pre { white-space: pre-wrap; }
+  .ok { color: #1a7f37; } .ko { color: #c62828; font-weight: 600; }
+  #summary { font-size: 16px; font-weight: 600; margin: 12px 0; }
+  iframe { border: 1px solid #ccc; width: 1700px; height: 1300px; }
+</style>
+</head>
+<body>
+<h1>GEN436 – Tests de l'interface du simulateur</h1>
+<p>Pilote la page <code>docs/index.html</code> comme le ferait un étudiant (curseurs, conventions,
+modes, préconfigurations) et vérifie ce qui est affiché. Sous le protocole <code>file://</code>, le
+navigateur doit être lancé avec <code>--disable-web-security</code> : utilisez
+<code>python tests/run_tests.py</code>.</p>
+<div id="summary">en cours…</div>
+<pre id="out"></pre>
+<iframe id="app" src="../docs/index.html?theme=light&amp;pause=1"></iframe>
+<script src="ui_tests.js"></script>
+</body>
+</html>

@@ -1,0 +1,190 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>GEN436 – Simulateur de machine synchrone</title>
+<meta name="description" content="Simulateur interactif de la machine synchrone (génératrice, moteur, compensateur) pour le cours GEN436 – Machines électriques.">
+<meta name="author" content="Marc-Antoine Coulombe, CPI">
+<meta name="copyright" content="© 2026 Marc-Antoine Coulombe, CPI">
+<link rel="stylesheet" href="css/style.css">
+<script>
+  // Thème choisi (lien ?theme= ou choix précédent) appliqué avant le premier affichage, sans clignotement.
+  (function () {
+    try {
+      var m = /[?&]theme=(dark|light)/.exec(window.location.search);
+      var t = m ? m[1] : window.localStorage.getItem('gen436-theme');
+      if (t === 'dark' || t === 'light') document.documentElement.setAttribute('data-theme', t);
+    } catch (e) { /* stockage indisponible : thème du système */ }
+  })();
+</script>
+</head>
+<body>
+<header class="top">
+  <div class="brand">
+    <span class="course">GEN436</span>
+    <h1>Simulateur de machine synchrone</h1>
+  </div>
+  <div class="topctl">
+    <div class="field">
+      <span class="fieldlbl" id="lbl-conv">Convention</span>
+      <div class="seg" role="group" aria-labelledby="lbl-conv" id="seg-conv">
+        <button type="button" data-v="gen">Générateur</button>
+        <button type="button" data-v="rec">Récepteur</button>
+      </div>
+    </div>
+    <div class="field">
+      <span class="fieldlbl" id="lbl-units">Unités</span>
+      <div class="seg" role="group" aria-labelledby="lbl-units" id="seg-units">
+        <button type="button" data-v="pu">pu</button>
+        <button type="button" data-v="si">SI</button>
+      </div>
+    </div>
+    <button type="button" class="iconbtn" id="btn-theme" title="Thème clair / sombre" aria-label="Changer de thème">◐</button>
+  </div>
+</header>
+
+<div class="layout">
+  <aside class="side" id="side">
+    <section class="panel">
+      <h2>Préconfiguration <span class="hint">cas du cours</span></h2>
+      <select id="preset" aria-label="Préconfiguration"></select>
+      <div class="presetnav">
+        <button type="button" id="preset-prev" title="Cas précédent" aria-label="Cas précédent">◀</button>
+        <span id="preset-slide" class="slide"></span>
+        <button type="button" id="preset-reload" title="Revenir aux réglages de ce cas" aria-label="Revenir aux réglages de ce cas">↺</button>
+        <button type="button" id="preset-next" title="Cas suivant" aria-label="Cas suivant">▶</button>
+      </div>
+      <p id="preset-text" class="presettext"></p>
+      <details class="help">
+        <summary>Comment utiliser le simulateur</summary>
+        <ol>
+          <li>Choisissez un cas du cours dans la liste, ou partez d'un réglage libre.</li>
+          <li>Faites glisser un curseur des « grandeurs imposées », ou tapez une valeur puis Entrée. Les boutons − et + et les flèches ↑ ↓ ajustent pas à pas (Maj : dix pas).</li>
+          <li>Observez en même temps le schéma, l'animation, le diagramme vectoriel et les courbes.</li>
+          <li>Changez de convention : les signes changent, pas la machine.</li>
+          <li>« Mémoriser cet état » garde le point actuel en gris pour le comparer au suivant.</li>
+        </ol>
+      </details>
+    </section>
+
+    <section class="panel">
+      <h2>Réseau et grandeurs imposées</h2>
+      <select id="mode" aria-label="Grandeurs imposées">
+        <optgroup label="Réseau infini (Vs et fs imposées par le réseau)">
+          <option value="bus_EP">Ir et couple à l'arbre imposés</option>
+          <option value="bus_PQ">Ps et Qs imposées (on calcule Ir et δ)</option>
+          <option value="bus_Ed">Ir et angle interne δ imposés</option>
+        </optgroup>
+        <optgroup label="Réseau indépendant (génératrice sur une charge)">
+          <option value="load_VI">Vs régulée, charge Is et cos φ (on calcule Ir)</option>
+          <option value="load_Z">Ir fixe, charge Z (Vs en résulte)</option>
+        </optgroup>
+      </select>
+      <div id="loadstate" class="seg small" role="group" aria-label="État du stator" hidden>
+        <button type="button" data-v="charge">En charge</button>
+        <button type="button" data-v="vide">À vide</button>
+        <button type="button" data-v="cc">Court-circuit</button>
+      </div>
+      <div id="rows" class="rows"></div>
+    </section>
+
+    <section class="panel">
+      <h2>Machine</h2>
+      <select id="machine" aria-label="Machine"></select>
+      <div class="seg small" role="group" aria-label="Type de rotor" id="seg-rotor">
+        <button type="button" data-v="lisse">Pôles lisses</button>
+        <button type="button" data-v="saillant">Pôles saillants</button>
+      </div>
+      <div id="mrows" class="rows"></div>
+      <details>
+        <summary>Plaque signalétique et pertes</summary>
+        <div id="nrows" class="rows"></div>
+        <p id="basetext" class="note"></p>
+      </details>
+    </section>
+
+    <section class="panel" id="panel-dyn">
+      <h2>Dynamique de l'arbre</h2>
+      <label class="check"><input type="checkbox" id="dyn-on"> Simuler l'équation du mouvement <span class="math"><i>J</i>·d<i>Ω</i><sub>s</sub>/d<i>t</i></span></label>
+      <p class="note" id="dyn-note">Disponible quand Ir et le couple à l'arbre sont imposés sur un réseau infini.</p>
+      <div id="drows" class="rows"></div>
+      <div class="btnrow">
+        <button type="button" id="dyn-kick">Perturber δ de +20°</button>
+        <button type="button" id="dyn-reset">Resynchroniser</button>
+      </div>
+    </section>
+  </aside>
+
+  <main>
+    <section class="status" id="status" aria-live="polite"></section>
+
+    <div class="grid top3">
+      <article class="card" id="card-schema">
+        <header><h2>Schéma du système</h2><span class="sub">sens réel des échanges, puis circuit dans la convention choisie</span></header>
+        <svg id="svg-schema" class="dia" role="img" aria-label="Schéma du système simulé"></svg>
+      </article>
+
+      <article class="card" id="card-machine">
+        <header><h2>Rotor et stator</h2><span class="sub">angle électrique (p = 1)</span></header>
+        <svg id="svg-machine" class="dia" role="img" aria-label="Coupe animée de la machine"></svg>
+        <div class="animctl">
+          <button type="button" id="anim-play" aria-label="Pause ou lecture">⏸</button>
+          <button type="button" id="anim-zero" title="Revenir à l'instant du diagramme vectoriel">t = 0</button>
+          <label class="speed">Vitesse <input type="range" class="rng" id="anim-speed" min="0.02" max="1" step="0.02" value="0.15"></label>
+        </div>
+        <p class="caption" id="machine-caption"></p>
+      </article>
+
+      <article class="card" id="card-phasor">
+        <header><h2>Diagramme vectoriel</h2><span class="sub math" id="phasor-eq"></span></header>
+        <svg id="svg-phasor" class="dia" role="img" aria-label="Diagramme vectoriel"></svg>
+        <div class="toggles" id="overlays">
+          <label><input type="checkbox" data-ov="angles"> Angles δ, φ, ψ</label>
+          <label><input type="checkbox" data-ov="fmm"> fmm <span class="math"><b>F</b><sub>r</sub>, <b>F</b><sub>s</sub>, <b>F</b></span></label>
+          <label><input type="checkbox" data-ov="dq"> Axes d-q</label>
+          <label><input type="checkbox" data-ov="decomp"> Composantes d et q</label>
+          <label><input type="checkbox" data-ov="pq"> Axes P-Q</label>
+          <label><input type="checkbox" data-ov="loci"> Lieux de <span class="math"><b>E</b></span></label>
+          <span class="spacer"></span>
+          <button type="button" id="btn-ghost" title="Garde l'état actuel en gris sur le diagramme et les courbes, pour le comparer au suivant">Mémoriser cet état</button>
+          <button type="button" id="phasor-fit" title="Recadrer le diagramme">Recadrer</button>
+        </div>
+        <p class="caption" id="phasor-caption"></p>
+      </article>
+    </div>
+
+    <article class="card" id="card-values">
+      <header><h2>Grandeurs calculées</h2><span class="sub" id="values-sub"></span></header>
+      <div id="values" class="values"></div>
+    </article>
+
+    <div class="grid charts" id="charts"></div>
+
+    <footer class="foot">
+      <p>Régime permanent, circuit magnétique non saturé, grandeurs par phase (ligne-neutre). Modèle de Behn-Eschenburg (pôles lisses) et modèle à deux réactances (pôles saillants). Les longueurs du courant et des fmm sont tracées avec leur propre échelle.</p>
+      <p>Matériel pédagogique du cours GEN436 – Machines électriques (UQAR). Nomenclature d'après les notes de cours adaptées de M. Berger, P. Viarouge et A. Chebak.</p>
+      <p class="copyright">© 2026 Marc-Antoine Coulombe, CPI</p>
+      <p class="license">Distribué sous licence <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/deed.fr" rel="license noopener" target="_blank">Creative Commons Attribution – Pas d'utilisation commerciale – Partage dans les mêmes conditions 4.0 International (CC BY-NC-SA 4.0)</a>.</p>
+    </footer>
+  </main>
+</div>
+
+<div id="errbox" hidden></div>
+<script>
+  window.addEventListener('error', function (e) {
+    var b = document.getElementById('errbox');
+    b.hidden = false;
+    b.textContent += 'Erreur : ' + e.message + ' (' + (e.filename || '').split('/').pop() + ':' + e.lineno + ')\n';
+  });
+</script>
+<script src="js/model.js"></script>
+<script src="js/draw.js"></script>
+<script src="js/phasor.js"></script>
+<script src="js/machine.js"></script>
+<script src="js/schema.js"></script>
+<script src="js/charts.js"></script>
+<script src="js/presets.js"></script>
+<script src="js/app.js"></script>
+</body>
+</html>

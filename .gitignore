@@ -1,0 +1,8 @@
+# Notes de cours : matériel protégé, à ne pas publier avec le simulateur
+*.pdf
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+venv/
