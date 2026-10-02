@@ -36,13 +36,6 @@ Le menu « Réseau et grandeurs imposées » fixe ce qui est figé :
 Liens directs : `index.html?s=c5-54` ouvre une préconfiguration (identifiants dans
 `docs/js/presets.js`) ; on peut ajouter `&conv=rec`, `&u=si`, `&theme=dark`.
 
-## Publier sur GitHub Pages
-
-1. Créer un dépôt GitHub et y pousser ce dossier (les PDF du cours sont exclus par `.gitignore`).
-2. Dans le dépôt : **Settings → Pages → Build and deployment → Deploy from a branch**, branche
-   `main`, dossier **`/docs`**.
-3. La page est servie à `https://<utilisateur>.github.io/<dépôt>/`.
-
 ## Modèle
 
 Régime permanent, circuit magnétique non saturé, grandeurs par phase (ligne-neutre), valeurs
